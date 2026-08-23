@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "onspace-app",
-    "slug": "onspace-app",
-    "version": "1.0.0",
+    "name": "music-player",
+    "slug": "music-player",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "onspaceapp",
@@ -12,6 +12,7 @@
       "supportsTablet": true
     },
     "android": {
+       "package": "com.sorsore85.amirplayer",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
