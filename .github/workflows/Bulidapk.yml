@@ -29,6 +29,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Type Check
+        run: pnpm tsc
+
+      
       - name: Generate Android Source (Prebuild)
         run: npx expo prebuild --platform android
 
