@@ -1,5 +1,11 @@
 {
   "expo": {
+    "extra": {
+  "eas": {
+    "projectId": "0d5807e2-464f-4a7e-9920-bf761a4e68db"
+  }
+}
+
     "name": "musicplayer",
     "slug": "musicplayer",
     "version": "0.0.1",
