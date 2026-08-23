@@ -29,8 +29,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Install Expo UI dependencies
+        run: pnpm add expo-blur expo-linear-gradient babel-preset-expo
+
       - name: Type Check
-        run: pnpm tsc
+        run: pnpm tsc --noEmit
 
       
       - name: Generate Android Source (Prebuild)

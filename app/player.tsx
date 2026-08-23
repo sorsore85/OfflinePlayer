@@ -19,7 +19,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, Shadow } from '@/constants/theme';
-import { ACCENT_COLORS } from '@/constants/mockData';
+// Local accent palette – no external import needed
+const ACCENT_COLORS = [
+  '#FC3C44', '#5E5CE6', '#30D158', '#FFD60A',
+  '#BF5AF2', '#FF9F0A', '#64D2FF', '#FF6B70',
+  '#1e1e2e', '#2a2a3c', '#3b3b52',
+];
 import { usePlayer } from '@/hooks/usePlayer';
 import AlbumArt from '@/components/ui/AlbumArt';
 import SeekBar from '@/components/ui/SeekBar';
