@@ -69,7 +69,7 @@ const MiniPlayer = memo(() => {
       {...panResponder.panHandlers}
     >
       <Pressable
-        onPress={() => router.push('/player')}
+        onPress={() => router.push('/player' as any)}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={styles.container}

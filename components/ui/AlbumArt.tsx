@@ -3,9 +3,7 @@ import React, { memo } from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Radius, ACCENT_COLORS } from '@/constants/theme';
-
-// Need to import ACCENT_COLORS from mockData
+import { Colors, Radius } from '@/constants/theme';
 import { ACCENT_COLORS as COLORS } from '@/constants/mockData';
 
 interface AlbumArtProps {
