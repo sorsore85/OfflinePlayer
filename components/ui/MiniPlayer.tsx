@@ -9,7 +9,7 @@ import {
   PanResponder,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { usePlayer } from '@/hooks/usePlayer';
 import AlbumArt from './AlbumArt';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
@@ -69,7 +69,7 @@ const MiniPlayer = memo(() => {
       {...panResponder.panHandlers}
     >
       <Pressable
-        onPress={() => router.push('/player' as any)}
+        onPress={() => router.push('/player' as Href)}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={styles.container}

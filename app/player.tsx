@@ -1,5 +1,5 @@
 // Powered by OnSpace.AI
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,12 @@ import {
   ScrollView,
   StatusBar,
   Platform,
+  PanResponder,
+  LayoutChangeEvent,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -19,7 +23,7 @@ import { ACCENT_COLORS } from '@/constants/mockData';
 import { usePlayer } from '@/hooks/usePlayer';
 import AlbumArt from '@/components/ui/AlbumArt';
 import SeekBar from '@/components/ui/SeekBar';
-import { RepeatMode } from '@/types/music';
+import { RepeatMode, Track } from '@/types/music';
 import { formatDuration } from '@/services/mediaLibraryService';
 
 export default function PlayerScreen() {
@@ -72,172 +76,211 @@ export default function PlayerScreen() {
   const repeatActive = repeat !== 'off';
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, Spacing.lg),
-          paddingBottom: Math.max(insets.bottom, Spacing.xl),
-        },
-      ]}
-    >
-      <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* ── Top row ── */}
-      <View style={styles.topRow}>
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.5 }]}
-          hitSlop={12}
-        >
-          <MaterialIcons name="keyboard-arrow-down" size={32} color={Colors.textPrimary} />
-        </Pressable>
-
-        <View style={styles.headerCenter}>
-          <Text style={styles.nowPlayingLabel}>NOW PLAYING</Text>
-          {queue.length > 0 && (
-            <Text style={styles.queueCount}>{currentIndex + 1} / {queue.length}</Text>
-          )}
-        </View>
-
-        <Pressable
-          onPress={() => setShowQueue(true)}
-          style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.5 }]}
-          hitSlop={12}
-        >
-          <MaterialIcons name="queue-music" size={24} color={Colors.textPrimary} />
-        </Pressable>
-      </View>
-
-      {/* ── Artwork ── */}
-      <View style={styles.artworkContainer}>
+      {/* ── Dynamic Background ── */}
+      <View style={StyleSheet.absoluteFillObject}>
         {currentTrack.artwork ? (
-          <Image
-            source={{ uri: currentTrack.artwork }}
-            style={[styles.artwork, { borderRadius: Radius.xl }]}
-            contentFit="cover"
-            transition={300}
-          />
-        ) : (
-          <View
-            style={[
-              styles.artwork,
-              styles.artworkPlaceholder,
-              {
-                backgroundColor: accentColor + '1A',
-                borderColor: accentColor + '44',
-                borderRadius: Radius.xl,
-              },
-            ]}
-          >
+          <>
+            {/* Blurred artwork background */}
             <Image
-              source={require('@/assets/images/player-hero.png')}
-              style={{ width: '90%', height: '90%', borderRadius: Radius.lg }}
+              source={{ uri: currentTrack.artwork }}
+              style={StyleSheet.absoluteFillObject}
               contentFit="cover"
-              transition={200}
+              transition={400}
             />
-          </View>
-        )}
-        {/* Subtle glow beneath artwork */}
-        <View style={[styles.artworkGlow, { backgroundColor: accentColor }]} />
-      </View>
-
-      {/* ── Track info + favorite ── */}
-      <View style={styles.trackInfoRow}>
-        <View style={styles.trackTextGroup}>
-          <Text style={styles.trackTitle} numberOfLines={1}>
-            {currentTrack.title}
-          </Text>
-          <Text style={styles.trackArtist} numberOfLines={1}>
-            {currentTrack.artist}
-            {currentTrack.album && currentTrack.album !== 'Unknown Album'
-              ? ` • ${currentTrack.album}`
-              : ''}
-          </Text>
-        </View>
-        <Pressable
-          onPress={() => toggleFavorite(currentTrack.id)}
-          style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.5 }]}
-          hitSlop={8}
-        >
-          <MaterialIcons
-            name={favorited ? 'favorite' : 'favorite-border'}
-            size={26}
-            color={favorited ? Colors.primary : Colors.textTertiary}
+            <BlurView
+              intensity={90}
+              tint="dark"
+              style={StyleSheet.absoluteFillObject}
+            />
+          </>
+        ) : (
+          /* Accent-colour fallback */
+          <View
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: accentColor + '22' }]}
           />
-        </Pressable>
-      </View>
+        )}
 
-      {/* ── Seek bar ── */}
-      <View style={styles.seekWrapper}>
-        <SeekBar
-          position={position}
-          duration={duration}
-          onSeek={seekTo}
-          accentColor={accentColor}
+        {/* Always-on dark gradient to keep UI readable */}
+        <LinearGradient
+          colors={[
+            'rgba(0,0,0,0.25)',
+            'rgba(0,0,0,0.55)',
+            'rgba(0,0,0,0.88)',
+          ]}
+          locations={[0, 0.45, 1]}
+          style={StyleSheet.absoluteFillObject}
         />
       </View>
 
-      {/* ── Main controls ── */}
-      <View style={styles.controls}>
-        <Pressable
-          onPress={toggleShuffle}
-          style={({ pressed }) => [styles.sideBtn, pressed && { opacity: 0.5 }]}
-          hitSlop={8}
-        >
-          <MaterialIcons
-            name="shuffle"
-            size={24}
-            color={shuffle ? accentColor : Colors.textTertiary}
+      {/* ── Scrollable content ── */}
+      <View
+        style={[
+          styles.container,
+          {
+            paddingTop: Math.max(insets.top, Spacing.lg),
+            paddingBottom: Math.max(insets.bottom, Spacing.xl),
+          },
+        ]}
+      >
+        {/* ── Top row ── */}
+        <View style={styles.topRow}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.5 }]}
+            hitSlop={12}
+          >
+            <MaterialIcons name="keyboard-arrow-down" size={32} color={Colors.textPrimary} />
+          </Pressable>
+
+          <View style={styles.headerCenter}>
+            <Text style={styles.nowPlayingLabel}>NOW PLAYING</Text>
+            {queue.length > 0 && (
+              <Text style={styles.queueCount}>{currentIndex + 1} / {queue.length}</Text>
+            )}
+          </View>
+
+          <Pressable
+            onPress={() => setShowQueue(true)}
+            style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.5 }]}
+            hitSlop={12}
+          >
+            <MaterialIcons name="queue-music" size={24} color={Colors.textPrimary} />
+          </Pressable>
+        </View>
+
+        {/* ── Artwork ── */}
+        <View style={styles.artworkContainer}>
+          {currentTrack.artwork ? (
+            <Image
+              source={{ uri: currentTrack.artwork }}
+              style={[styles.artwork, { borderRadius: Radius.xl }]}
+              contentFit="cover"
+              transition={300}
+            />
+          ) : (
+            <View
+              style={[
+                styles.artwork,
+                styles.artworkPlaceholder,
+                {
+                  backgroundColor: accentColor + '1A',
+                  borderColor: accentColor + '44',
+                  borderRadius: Radius.xl,
+                },
+              ]}
+            >
+              <Image
+                source={require('@/assets/images/player-hero.png')}
+                style={{ width: '90%', height: '90%', borderRadius: Radius.lg }}
+                contentFit="cover"
+                transition={200}
+              />
+            </View>
+          )}
+          {/* Subtle glow beneath artwork */}
+          <View style={[styles.artworkGlow, { backgroundColor: accentColor }]} />
+        </View>
+
+        {/* ── Track info + favorite ── */}
+        <View style={styles.trackInfoRow}>
+          <View style={styles.trackTextGroup}>
+            <Text style={styles.trackTitle} numberOfLines={1}>
+              {currentTrack.title}
+            </Text>
+            <Text style={styles.trackArtist} numberOfLines={1}>
+              {currentTrack.artist}
+              {currentTrack.album && currentTrack.album !== 'Unknown Album'
+                ? ` • ${currentTrack.album}`
+                : ''}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => toggleFavorite(currentTrack.id)}
+            style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.5 }]}
+            hitSlop={8}
+          >
+            <MaterialIcons
+              name={favorited ? 'favorite' : 'favorite-border'}
+              size={26}
+              color={favorited ? Colors.primary : Colors.textTertiary}
+            />
+          </Pressable>
+        </View>
+
+        {/* ── Seek bar ── */}
+        <View style={styles.seekWrapper}>
+          <SeekBar
+            position={position}
+            duration={duration}
+            onSeek={seekTo}
+            accentColor={accentColor}
           />
-        </Pressable>
+        </View>
 
-        <Pressable
-          onPress={playPrevious}
-          style={({ pressed }) => [styles.skipBtn, pressed && { opacity: 0.5 }]}
-          hitSlop={8}
-        >
-          <MaterialIcons name="skip-previous" size={40} color={Colors.textPrimary} />
-        </Pressable>
+        {/* ── Main controls ── */}
+        <View style={styles.controls}>
+          <Pressable
+            onPress={toggleShuffle}
+            style={({ pressed }) => [styles.sideBtn, pressed && { opacity: 0.5 }]}
+            hitSlop={8}
+          >
+            <MaterialIcons
+              name="shuffle"
+              size={24}
+              color={shuffle ? accentColor : Colors.textTertiary}
+            />
+          </Pressable>
 
-        <Pressable
-          onPress={togglePlayPause}
-          style={({ pressed }) => [
-            styles.playPauseBtn,
-            { backgroundColor: accentColor, shadowColor: accentColor },
-            pressed && { opacity: 0.85, transform: [{ scale: 0.95 }] },
-          ]}
-        >
-          <MaterialIcons
-            name={isPlaying ? 'pause' : 'play-arrow'}
-            size={46}
-            color={Colors.textPrimary}
-          />
-        </Pressable>
+          <Pressable
+            onPress={playPrevious}
+            style={({ pressed }) => [styles.skipBtn, pressed && { opacity: 0.5 }]}
+            hitSlop={8}
+          >
+            <MaterialIcons name="skip-previous" size={40} color={Colors.textPrimary} />
+          </Pressable>
 
-        <Pressable
-          onPress={playNext}
-          style={({ pressed }) => [styles.skipBtn, pressed && { opacity: 0.5 }]}
-          hitSlop={8}
-        >
-          <MaterialIcons name="skip-next" size={40} color={Colors.textPrimary} />
-        </Pressable>
+          <Pressable
+            onPress={togglePlayPause}
+            style={({ pressed }) => [
+              styles.playPauseBtn,
+              { backgroundColor: accentColor, shadowColor: accentColor },
+              pressed && { opacity: 0.85, transform: [{ scale: 0.95 }] },
+            ]}
+          >
+            <MaterialIcons
+              name={isPlaying ? 'pause' : 'play-arrow'}
+              size={46}
+              color={Colors.textPrimary}
+            />
+          </Pressable>
 
-        <Pressable
-          onPress={cycleRepeat}
-          style={({ pressed }) => [styles.sideBtn, pressed && { opacity: 0.5 }]}
-          hitSlop={8}
-        >
-          <MaterialIcons
-            name={repeatIcon}
-            size={24}
-            color={repeatActive ? accentColor : Colors.textTertiary}
-          />
-        </Pressable>
+          <Pressable
+            onPress={playNext}
+            style={({ pressed }) => [styles.skipBtn, pressed && { opacity: 0.5 }]}
+            hitSlop={8}
+          >
+            <MaterialIcons name="skip-next" size={40} color={Colors.textPrimary} />
+          </Pressable>
+
+          <Pressable
+            onPress={cycleRepeat}
+            style={({ pressed }) => [styles.sideBtn, pressed && { opacity: 0.5 }]}
+            hitSlop={8}
+          >
+            <MaterialIcons
+              name={repeatIcon}
+              size={24}
+              color={repeatActive ? accentColor : Colors.textTertiary}
+            />
+          </Pressable>
+        </View>
+
+        {/* ── Volume slider ── */}
+        <VolumeSlider volume={volume} onChange={setVolume} accentColor={accentColor} />
       </View>
-
-      {/* ── Volume slider ── */}
-      <VolumeSlider volume={volume} onChange={setVolume} accentColor={accentColor} />
 
       {/* ── Queue Modal ── */}
       <Modal
@@ -262,9 +305,6 @@ export default function PlayerScreen() {
 }
 
 // ─── Volume Slider ─────────────────────────────────────────────────────────
-import { PanResponder, LayoutChangeEvent } from 'react-native';
-import { useRef } from 'react';
-
 function VolumeSlider({
   volume,
   onChange,
@@ -379,8 +419,6 @@ const volStyles = StyleSheet.create({
 });
 
 // ─── Queue Sheet ──────────────────────────────────────────────────────────
-import { Track } from '@/types/music';
-
 function QueueSheet({
   queue,
   currentIndex,
@@ -518,9 +556,12 @@ const qStyles = StyleSheet.create({
 
 // ─── Main styles ──────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: Colors.bg,
+  },
+  container: {
+    flex: 1,
     paddingHorizontal: Spacing.xl,
   },
   topRow: {
@@ -577,7 +618,6 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     opacity: 0.2,
-    filter: [{ blur: 18 }] as any,
   },
   trackInfoRow: {
     flexDirection: 'row',

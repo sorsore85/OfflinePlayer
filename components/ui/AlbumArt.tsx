@@ -4,7 +4,13 @@ import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Radius } from '@/constants/theme';
-import { ACCENT_COLORS as COLORS } from '@/constants/mockData';
+
+// Local fallback palette – no external import needed
+const COLORS = [
+  '#FC3C44', '#5E5CE6', '#30D158', '#FFD60A',
+  '#BF5AF2', '#FF9F0A', '#64D2FF', '#FF6B70',
+  '#1e1e2e', '#2a2a3c', '#3b3b52',
+];
 
 interface AlbumArtProps {
   artwork?: string | null;
